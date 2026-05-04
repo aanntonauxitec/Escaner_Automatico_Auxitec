@@ -1,0 +1,19 @@
+13 Escaner/
+2_bultos_cortados/
+3_salida_prowin/
+4_historico_originales/
+
+# Ignorar archivos de prueba
+*.pdf
+*.xls
+*.xlsx
+
+# Ignorar compilaciones de PyInstaller
+build/
+dist/
+*.spec
+*.exe
+
+# Entornos virtuales
+venv/
+env/
