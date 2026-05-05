@@ -9,7 +9,7 @@ import sys
 try:
     import fitz  # PyMuPDF
     from PIL import Image
-    from pyzbar.pyzbar import decode
+    import zxingcpp
     from PyPDF2 import PdfReader, PdfWriter
     import re
     from datetime import datetime
@@ -30,6 +30,7 @@ CARPETA_ENTRADA = r'\\auxifs\Auxitec\13 Escaner'
 CARPETA_CORTADOS = '2_bultos_cortados'
 CARPETA_PROWIN = '3_salida_prowin'
 CARPETA_HISTORICO = '4_historico_originales'
+FORMATOS_BARCODE = zxingcpp.BarcodeFormat.Code128 | zxingcpp.BarcodeFormat.Code39
 
 for carpeta in [CARPETA_CORTADOS, CARPETA_PROWIN, CARPETA_HISTORICO]:
     os.makedirs(carpeta, exist_ok=True)
@@ -38,23 +39,26 @@ for carpeta in [CARPETA_CORTADOS, CARPETA_PROWIN, CARPETA_HISTORICO]:
 # FASE 1: BÚSQUEDA Y CORTE
 # ==========================================
 def hay_pegatina_separadora(pagina_pdf):
-    pix = pagina_pdf.get_pixmap(dpi=300)
-    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    for codigo in decode(img):
-        texto = codigo.data.decode('utf-8').strip()
+    pix = pagina_pdf.get_pixmap(dpi=600, colorspace=fitz.csGRAY)
+    img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+    for codigo in zxingcpp.read_barcodes(img, formats=FORMATOS_BARCODE):
+        texto = codigo.text.strip()
         if "0000000" in texto:
             return True
     return False
 
 def extraer_datos_pagina(pagina_pdf):
     albaran, matricula, destino = None, None, None
-    pix = pagina_pdf.get_pixmap(dpi=300)
-    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    
-    codigos_encontrados = decode(img)
-    
+    pix = pagina_pdf.get_pixmap(dpi=600, colorspace=fitz.csGRAY)
+    img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+
+    codigos_encontrados = zxingcpp.read_barcodes(img, formats=FORMATOS_BARCODE)
+    if not codigos_encontrados:
+        img_bin = img.point(lambda p: 255 if p > 128 else 0)
+        codigos_encontrados = zxingcpp.read_barcodes(img_bin, formats=FORMATOS_BARCODE)
+
     for codigo in codigos_encontrados:
-        texto_barras = codigo.data.decode('utf-8').strip().strip('*')
+        texto_barras = codigo.text.strip().strip('*')
         
         if "0000000" in texto_barras:
             continue
@@ -97,6 +101,7 @@ def procesar_bandeja_entrada():
         return
 
     print(f"\n[2] ¡Bingo! Se han encontrado {len(archivos_entrada)} archivo(s) pendientes de procesar.")
+    print("    [!] MODO FUERZA BRUTA (600 DPI + ZXING) ACTIVADO.")
 
     for archivo in archivos_entrada:
         timestamp = datetime.now().strftime("%H%M%S")
