@@ -41,7 +41,11 @@ for carpeta in [CARPETA_CORTADOS, CARPETA_PROWIN, CARPETA_HISTORICO]:
 def hay_pegatina_separadora(pagina_pdf):
     pix = pagina_pdf.get_pixmap(dpi=600, colorspace=fitz.csGRAY)
     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
-    for codigo in zxingcpp.read_barcodes(img, formats=FORMATOS_BARCODE):
+    codigos = zxingcpp.read_barcodes(img)
+    if not codigos:
+        img_bin = img.point(lambda p: 255 if p > 128 else 0)
+        codigos = zxingcpp.read_barcodes(img_bin)
+    for codigo in codigos:
         texto = codigo.text.strip()
         if "0000000" in texto:
             return True
