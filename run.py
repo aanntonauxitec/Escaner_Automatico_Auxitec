@@ -30,7 +30,7 @@ CARPETA_ENTRADA = r'\\auxifs\Auxitec\13 Escaner'
 CARPETA_CORTADOS = '2_bultos_cortados'
 CARPETA_PROWIN = '3_salida_prowin'
 CARPETA_HISTORICO = '4_historico_originales'
-FORMATOS_BARCODE = zxingcpp.BarcodeFormat.Code128 | zxingcpp.BarcodeFormat.Code39
+FORMATOS_BARCODE = [zxingcpp.BarcodeFormat.Code128, zxingcpp.BarcodeFormat.Code39Std]
 
 for carpeta in [CARPETA_CORTADOS, CARPETA_PROWIN, CARPETA_HISTORICO]:
     os.makedirs(carpeta, exist_ok=True)
